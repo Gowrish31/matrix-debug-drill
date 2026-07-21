@@ -2,25 +2,41 @@ name: Matrix CI
 
 on:
   push:
-    branches: ['**']
+    branches: ['*']
   pull_request:
     branches: [main]
 
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+
+    continue-on-error: ${{ matrix.experimental == true }}
+
     strategy:
+      # fail-fast: false ensures every OS/Node combination completes so
+      # compatibility issues across the full matrix are visible.
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         node: [18, 20, 22]
+        include:
+          - os: ubuntu-latest
+            node: 24
+            experimental: true
+
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
       - name: Print environment info for debugging
         run: |
           node --version
           npm --version
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
+
       - run: npm ci
+
       - run: npm test
+      
